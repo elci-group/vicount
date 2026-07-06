@@ -18,11 +18,17 @@ struct HistoryEntry {
     timestamp: DateTime<Utc>,
 }
 
-/// Return the path to Vicount's data directory, creating it if necessary.
+/// Return the user's data directory according to the XDG Base Directory
+/// Specification, falling back to `~/.local/share` and then the current dir.
 fn data_dir() -> Result<PathBuf> {
-    let dir = dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("vicount");
+    let base = if let Some(xdg) = std::env::var_os("XDG_DATA_HOME") {
+        PathBuf::from(xdg)
+    } else if let Some(home) = std::env::var_os("HOME") {
+        PathBuf::from(home).join(".local/share")
+    } else {
+        PathBuf::from(".")
+    };
+    let dir = base.join("vicount");
     fs::create_dir_all(&dir).with_context(|| format!("creating data dir {}", dir.display()))?;
     Ok(dir)
 }

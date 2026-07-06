@@ -6,6 +6,7 @@ use tracing::{error, info};
 use vico_desktop_client::types::ContextMessage;
 
 mod app;
+mod history;
 mod theme;
 mod types;
 mod ui;
