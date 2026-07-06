@@ -6,6 +6,7 @@ use tracing::{debug, warn};
 
 /// User-facing configuration loaded from `~/.config/vicount/config.toml`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+/// Vicount user configuration.
 pub struct Config {
     /// URL of the ViCo Desktop gateway.
     ///
