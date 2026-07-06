@@ -31,7 +31,17 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
             } else {
                 theme.base()
             };
-            lines.push(Line::styled(format!("{}{} {}", prefix, i + 1, session), style));
+            let label = if session.message_count > 0 {
+                format!(
+                    "{} {} ({} messages)",
+                    prefix,
+                    session.name,
+                    session.message_count
+                )
+            } else {
+                format!("{} {}", prefix, session.name)
+            };
+            lines.push(Line::styled(label, style));
         }
     }
 

@@ -80,4 +80,6 @@ pub enum BackendResult {
     Append { text: String },
     Done,
     Failed { error: String },
+    SessionList { items: Vec<crate::vico::SessionSummary> },
+    SetMessages { messages: Vec<Message> },
 }

@@ -16,6 +16,7 @@ use crate::theme::Theme;
 use crate::types::{
     BackendResult, BackendTask, Message, Overlay, Role, SideTab, SlashCommand,
 };
+use crate::vico::SessionSummary;
 use crate::ui;
 use crate::vico::VicoClient;
 
@@ -57,7 +58,7 @@ pub struct App {
     pub model_picker_idx: usize,
     pub model_picker_providers: Vec<String>,
     pub session_picker_idx: usize,
-    pub session_picker_items: Vec<String>,
+    pub session_picker_items: Vec<SessionSummary>,
     pub quit_selected: bool,
 
     // Slash command autocomplete
@@ -455,15 +456,37 @@ impl App {
                 self.session_picker_idx = (self.session_picker_idx + 1).min(n - 1);
             }
             KeyCode::Enter => {
-                if let Some(s) = self.session_picker_items.get(self.session_picker_idx) {
-                    self.session_name = s.clone();
-                    self.set_status(format!("Resumed session {}", s));
+                let selected = self.session_picker_items.get(self.session_picker_idx).cloned();
+                if let Some(s) = selected {
+                    self.session_name = s.name.clone();
+                    self.session_id = Some(s.session_id.clone());
+                    self.vico.session_id = Some(s.session_id.clone());
+                    self.load_session_history(&s.session_id);
+                    self.set_status(format!("Resumed session {}", s.name));
                 }
                 self.overlay = Overlay::None;
             }
             KeyCode::Esc | KeyCode::Char('q') => self.overlay = Overlay::None,
             _ => {}
         }
+    }
+
+    fn load_session_history(&mut self, session_id: &str) {
+        let tx = self.result_tx.clone();
+        let vico = self.vico.clone();
+        let id = session_id.to_string();
+        tokio::spawn(async move {
+            match vico.load_session_history(&id).await {
+                Ok(messages) => {
+                    let _ = tx.send(BackendResult::SetMessages { messages }).await;
+                }
+                Err(e) => {
+                    let _ = tx
+                        .send(BackendResult::Failed { error: e.to_string() })
+                        .await;
+                }
+            }
+        });
     }
 
     fn handle_quit_key(&mut self, code: KeyCode) {
@@ -586,7 +609,35 @@ impl App {
                 };
                 self.messages.retain(|m| m.role == Role::System);
                 self.scroll = 0;
+                let name = self.session_name.clone();
+                let mut vico = self.vico.clone();
+                tokio::spawn(async move {
+                    match vico.create_session(&name).await {
+                        Ok(id) => info!("created session {id}"),
+                        Err(e) => warn!("failed to create server session: {e}"),
+                    }
+                });
                 self.set_status(format!("Started {}", self.session_name));
+            }
+            "sessions" => {
+                self.overlay = Overlay::SessionPicker;
+                self.session_picker_idx = 0;
+                let tx = self.result_tx.clone();
+                let vico = self.vico.clone();
+                tokio::spawn(async move {
+                    match vico.list_sessions(Some(50)).await {
+                        Ok(items) => {
+                            let _ = tx
+                                .send(BackendResult::SessionList { items })
+                                .await;
+                        }
+                        Err(e) => {
+                            let _ = tx
+                                .send(BackendResult::Failed { error: e.to_string() })
+                                .await;
+                        }
+                    }
+                });
             }
             "model" => {
                 self.overlay = Overlay::ModelPicker;
@@ -709,6 +760,14 @@ impl App {
                 }
                 self.busy = false;
                 self.turn_started = None;
+            }
+            BackendResult::SessionList { items } => {
+                self.session_picker_items = items;
+            }
+            BackendResult::SetMessages { messages } => {
+                self.messages.retain(|m| m.role == Role::System);
+                self.messages.extend(messages);
+                self.scroll_to_bottom();
             }
         }
     }
