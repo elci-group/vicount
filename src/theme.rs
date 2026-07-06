@@ -69,7 +69,6 @@ impl Theme {
         }
     }
 
-
     pub fn base(self) -> Style {
         Style::default().fg(self.foreground).bg(self.background)
     }
@@ -162,8 +161,17 @@ mod tests {
 
     #[test]
     fn from_name_selects_light_and_dark() {
-        assert_eq!(Theme::from_name("light").background, Theme::light().background);
-        assert_eq!(Theme::from_name("DARK").background, Theme::dark().background);
-        assert_eq!(Theme::from_name("unknown").background, Theme::dark().background);
+        assert_eq!(
+            Theme::from_name("light").background,
+            Theme::light().background
+        );
+        assert_eq!(
+            Theme::from_name("DARK").background,
+            Theme::dark().background
+        );
+        assert_eq!(
+            Theme::from_name("unknown").background,
+            Theme::dark().background
+        );
     }
 }

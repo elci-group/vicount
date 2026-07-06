@@ -62,12 +62,18 @@ pub fn load() -> Config {
                 cfg
             }
             Err(e) => {
-                warn!("malformed config file {}: {e}; using defaults", path.display());
+                warn!(
+                    "malformed config file {}: {e}; using defaults",
+                    path.display()
+                );
                 Config::default()
             }
         },
         Err(e) => {
-            warn!("cannot read config file {}: {e}; using defaults", path.display());
+            warn!(
+                "cannot read config file {}: {e}; using defaults",
+                path.display()
+            );
             Config::default()
         }
     }

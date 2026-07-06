@@ -622,13 +622,19 @@ mod tests {
             "data": {"response": "from data"},
             "response": "from root"
         });
-        assert_eq!(extract_response_text(value, "fallback").unwrap(), "from data");
+        assert_eq!(
+            extract_response_text(value, "fallback").unwrap(),
+            "from data"
+        );
     }
 
     #[test]
     fn extract_response_text_uses_root_response() {
         let value = serde_json::json!({"response": "root only"});
-        assert_eq!(extract_response_text(value, "fallback").unwrap(), "root only");
+        assert_eq!(
+            extract_response_text(value, "fallback").unwrap(),
+            "root only"
+        );
     }
 
     #[test]
