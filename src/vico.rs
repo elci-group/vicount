@@ -547,6 +547,65 @@ mod tests {
         let url = ws_url_for("https://example.com", "/vico/chat/stream", "tok").unwrap();
         assert!(url.starts_with("wss://example.com:443/vico/chat/stream?token=tok"));
     }
+
+    #[test]
+    fn parse_session_list_extracts_fields() {
+        let value = serde_json::json!({
+            "data": [
+                {"session_id": "s1", "name": "Alpha", "message_count": 5},
+                {"session_id": "s2", "message_count": 0}
+            ]
+        });
+        let sessions = parse_session_list(value).unwrap();
+        assert_eq!(sessions.len(), 2);
+        assert_eq!(sessions[0].session_id, "s1");
+        assert_eq!(sessions[0].name, "Alpha");
+        assert_eq!(sessions[0].message_count, 5);
+        assert_eq!(sessions[1].name, "s2");
+        assert_eq!(sessions[1].message_count, 0);
+    }
+
+    #[test]
+    fn parse_session_history_maps_roles_and_content() {
+        let value = serde_json::json!({
+            "data": [
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "hello"},
+                {"role": "system", "content": "note"},
+            ]
+        });
+        let messages = parse_session_history(value).unwrap();
+        assert_eq!(messages.len(), 3);
+        assert_eq!(messages[0].role, Role::User);
+        assert_eq!(messages[1].role, Role::Assistant);
+        assert_eq!(messages[2].role, Role::System);
+        assert_eq!(messages[1].content, "hello");
+        assert!(!messages[0].streaming);
+    }
+
+    #[test]
+    fn extract_response_text_prefers_data_response() {
+        let value = serde_json::json!({
+            "data": {"response": "from data"},
+            "response": "from root"
+        });
+        assert_eq!(extract_response_text(value, "fallback").unwrap(), "from data");
+    }
+
+    #[test]
+    fn extract_response_text_uses_root_response() {
+        let value = serde_json::json!({"response": "root only"});
+        assert_eq!(extract_response_text(value, "fallback").unwrap(), "root only");
+    }
+
+    #[test]
+    fn extract_response_text_falls_back_to_whole_value() {
+        let value = serde_json::json!({"graph_id": "abc"});
+        assert_eq!(
+            extract_response_text(value.clone(), "graph_id").unwrap(),
+            "abc"
+        );
+    }
 }
 
 fn extract_response_text(value: Value, fallback_key: &str) -> Result<String> {
