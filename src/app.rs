@@ -647,12 +647,7 @@ impl App {
         let vico = self.vico.clone();
         let context = self.build_context();
         tokio::spawn(async move {
-            let result = run_backend_task(task, vico, context).await;
-            for r in result {
-                if tx.send(r).await.is_err() {
-                    break;
-                }
-            }
+            run_backend_task(task, vico, context, tx).await;
         });
     }
 
@@ -849,36 +844,73 @@ async fn run_backend_task(
     task: BackendTask,
     vico: VicoClient,
     context: Vec<ContextMessage>,
-) -> Vec<BackendResult> {
+    tx: mpsc::Sender<BackendResult>,
+) {
     match task {
-        BackendTask::Chat { prompt } => match vico.chat(&prompt, context).await {
-            Ok(text) => {
-                let words: Vec<&str> = text.split_whitespace().collect();
-                let mut results = Vec::with_capacity(words.len().saturating_add(1));
-                let n = words.len();
-                for (i, word) in words.into_iter().enumerate() {
-                    let mut chunk = word.to_string();
-                    if i + 1 < n {
-                        chunk.push(' ');
+        BackendTask::Chat { prompt } => {
+            match vico.chat_stream(&prompt, context).await {
+                Ok(mut rx) => {
+                    while let Some(chunk) = rx.recv().await {
+                        match chunk {
+                            Ok(text) => {
+                                if tx.send(BackendResult::Append { text }).await.is_err() {
+                                    return;
+                                }
+                            }
+                            Err(e) => {
+                                let _ = tx
+                                    .send(BackendResult::Failed { error: e.to_string() })
+                                    .await;
+                                let _ = tx.send(BackendResult::Done).await;
+                                return;
+                            }
+                        }
                     }
-                    results.push(BackendResult::Append { text: chunk });
+                    let _ = tx.send(BackendResult::Done).await;
                 }
-                results.push(BackendResult::Done);
-                results
+                Err(e) => {
+                    let _ = tx
+                        .send(BackendResult::Failed { error: e.to_string() })
+                        .await;
+                    let _ = tx.send(BackendResult::Done).await;
+                }
             }
-            Err(e) => vec![BackendResult::Failed { error: e.to_string() }, BackendResult::Done],
-        },
+        }
         BackendTask::Plan { prompt } => match vico.plan(&prompt, context).await {
-            Ok(text) => vec![BackendResult::Append { text }, BackendResult::Done],
-            Err(e) => vec![BackendResult::Failed { error: e.to_string() }, BackendResult::Done],
+            Ok(text) => {
+                let _ = tx.send(BackendResult::Append { text }).await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
+            Err(e) => {
+                let _ = tx
+                    .send(BackendResult::Failed { error: e.to_string() })
+                    .await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
         },
         BackendTask::Run { prompt } => match vico.orchestrate_submit(&prompt).await {
-            Ok(text) => vec![BackendResult::Append { text }, BackendResult::Done],
-            Err(e) => vec![BackendResult::Failed { error: e.to_string() }, BackendResult::Done],
+            Ok(text) => {
+                let _ = tx.send(BackendResult::Append { text }).await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
+            Err(e) => {
+                let _ = tx
+                    .send(BackendResult::Failed { error: e.to_string() })
+                    .await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
         },
         BackendTask::Status => match vico.system_status().await {
-            Ok(text) => vec![BackendResult::Append { text }, BackendResult::Done],
-            Err(e) => vec![BackendResult::Failed { error: e.to_string() }, BackendResult::Done],
+            Ok(text) => {
+                let _ = tx.send(BackendResult::Append { text }).await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
+            Err(e) => {
+                let _ = tx
+                    .send(BackendResult::Failed { error: e.to_string() })
+                    .await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
         },
     }
 }

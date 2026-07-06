@@ -1,6 +1,6 @@
 [package]
 name = "vicount"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2021"
 authors = ["ViCo"]
 description = "Vicount — a Rust rewrite of Hermes with Vi Desktop integration."
@@ -21,6 +21,7 @@ unicode-width = "0.2"
 chrono = { version = "0.4", features = ["serde"] }
 tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 url = "2.5"
+urlencoding = "2.1"
 futures-util = "0.3"
 
 [[bin]]

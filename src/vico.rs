@@ -86,6 +86,89 @@ impl VicoClient {
         extract_response_text(res, "response")
     }
 
+    /// Stream a chat response via `/vico/chat/stream` WebSocket.
+    ///
+    /// Returns a channel that yields text chunks as they arrive. The channel
+    /// closes once the stream is complete.
+    pub async fn chat_stream(
+        &self,
+        message: &str,
+        context: Vec<ContextMessage>,
+    ) -> Result<mpsc::Receiver<Result<String>>> {
+        let (tx, rx) = mpsc::channel::<Result<String>>(64);
+
+        if !self.enabled {
+            // Offline/demo mode: simulate streaming by echoing word-by-word.
+            let text = format!("Echo: {}", message.lines().next().unwrap_or(""));
+            tokio::spawn(async move {
+                for word in text.split_whitespace() {
+                    let chunk = format!("{word} ");
+                    if tx.send(Ok(chunk)).await.is_err() {
+                        return;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                }
+            });
+            return Ok(rx);
+        }
+
+        self.ensure_auth().await?;
+        let token = {
+            let lock = self.inner.lock().await;
+            let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+            client.token().map(String::from)
+        };
+        let token = token.ok_or_else(|| anyhow!("not authenticated"))?;
+
+        let base = self.url();
+        let ws_url = ws_url_for(&base, "/vico/chat/stream", &token)?;
+        let (ws_stream, _) = tokio_tungstenite::connect_async(ws_url)
+            .await
+            .map_err(|e| anyhow!("websocket connect failed: {e}"))?;
+        let (mut write, mut read) = ws_stream.split();
+
+        let req = ChatRequest {
+            message: message.to_string(),
+            context,
+            target_agent: None,
+        };
+        let req_json = serde_json::to_string(&req)?;
+        write
+            .send(WsMessage::Text(req_json.into()))
+            .await
+            .map_err(|e| anyhow!("websocket send failed: {e}"))?;
+
+        tokio::spawn(async move {
+            while let Some(msg) = read.next().await {
+                match msg {
+                    Ok(WsMessage::Text(text)) => {
+                        match parse_stream_message(&text) {
+                            StreamEvent::Chunk(chunk) => {
+                                if tx.send(Ok(chunk)).await.is_err() {
+                                    break;
+                                }
+                            }
+                            StreamEvent::Complete => break,
+                            StreamEvent::Error(err) => {
+                                let _ = tx.send(Err(anyhow!(err))).await;
+                                break;
+                            }
+                            StreamEvent::Ignore => {}
+                        }
+                    }
+                    Ok(WsMessage::Close(_)) => break,
+                    Err(e) => {
+                        let _ = tx.send(Err(anyhow!("websocket error: {e}"))).await;
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+        Ok(rx)
+    }
+
     /// Call `/vico/atomise/plan` with a prompt.
     pub async fn plan(&self, prompt: &str, context: Vec<ContextMessage>) -> Result<String> {
         if !self.enabled {
@@ -156,6 +239,50 @@ impl VicoClient {
         let res: Value = client.system_health().await.map_err(|e| anyhow!("{e}"))?;
         debug!("system health response: {res}");
         Ok(serde_json::to_string(&res).unwrap_or_else(|_| "healthy".to_string()))
+    }
+}
+
+/// Convert an HTTP URL into a WebSocket URL and append the auth token.
+fn ws_url_for(base: &str, path: &str, token: &str) -> Result<String> {
+    let url = Url::parse(base)?;
+    let scheme = if url.scheme() == "https" { "wss" } else { "ws" };
+    let host = url.host_str().unwrap_or("localhost");
+    let port = url.port_or_known_default().unwrap_or(9876);
+    Ok(format!(
+        "{}://{}:{}{}?token={}",
+        scheme,
+        host,
+        port,
+        path,
+        urlencoding::encode(token)
+    ))
+}
+
+/// Events parsed from a `/vico/chat/stream` WebSocket message.
+enum StreamEvent {
+    Chunk(String),
+    Complete,
+    Error(String),
+    Ignore,
+}
+
+fn parse_stream_message(text: &str) -> StreamEvent {
+    let value: Value = match serde_json::from_str(text) {
+        Ok(v) => v,
+        Err(_) => return StreamEvent::Ignore,
+    };
+
+    match value.get("type").and_then(|v| v.as_str()) {
+        Some("stream_chunk") => {
+            let chunk = value.get("chunk").and_then(|v| v.as_str()).unwrap_or("");
+            StreamEvent::Chunk(chunk.to_string())
+        }
+        Some("stream_complete") => StreamEvent::Complete,
+        Some("error") => {
+            let err = value.get("error").and_then(|v| v.as_str()).unwrap_or("streaming error");
+            StreamEvent::Error(err.to_string())
+        }
+        _ => StreamEvent::Ignore,
     }
 }
 
