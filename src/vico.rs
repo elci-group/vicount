@@ -90,7 +90,7 @@ impl VicoClient {
             message: message.to_string(),
             context,
             target_agent: None,
-            session_id: None,
+            session_id: self.session_id.clone(),
         };
         let lock = self.inner.lock().await;
         let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
@@ -144,7 +144,7 @@ impl VicoClient {
             message: message.to_string(),
             context,
             target_agent: None,
-            session_id: None,
+            session_id: self.session_id.clone(),
         };
         let req_json = serde_json::to_string(&req)?;
         write
