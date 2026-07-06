@@ -91,3 +91,32 @@ pub enum BackendResult {
         messages: Vec<Message>,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn role_display() {
+        assert_eq!(Role::User.to_string(), "user");
+        assert_eq!(Role::Assistant.to_string(), "assistant");
+        assert_eq!(Role::System.to_string(), "system");
+    }
+
+    #[test]
+    fn side_tab_display() {
+        assert_eq!(SideTab::Skills.to_string(), "Skills");
+        assert_eq!(SideTab::Tools.to_string(), "Tools");
+    }
+
+    #[test]
+    fn message_serializes_streaming_default_false() {
+        let msg = Message {
+            role: Role::Assistant,
+            content: "hello".into(),
+            streaming: false,
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains("\"streaming\":false"));
+    }
+}

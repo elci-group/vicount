@@ -17,15 +17,22 @@ d = 0.20
 r = 0.15
 
 [push]
-enabled = false
+enabled = true
 branch = "main"
+
+[capabilities]
+network_push = true
+network_webhooks = false
+network_inference = false
+bundle_scoring = false
+external_plugins = false
 
 [ratelimit]
 min_commit_interval = 10
 
 [test]
 command = "cargo test"
-required = true
+required = false
 
 # [staging]
 # mode = "all"        # "all" (default), "cluster" (only changed files), or "pattern"

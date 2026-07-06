@@ -21,7 +21,7 @@ Vicount is a chat-first terminal UI for [ViCo Desktop](https://github.com/scotia
 ## Install
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/YOURUSER/vicount/main/scripts/install.sh | sh
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/elci-group/vicount/main/scripts/install.sh | sh
 ```
 
 Or build from source:
