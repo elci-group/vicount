@@ -52,11 +52,13 @@ impl VicoClient {
     }
 
     /// Set the active session ID used for chat and plan requests.
+    #[allow(dead_code)]
     pub fn set_session_id(&mut self, id: String) {
         self.session_id = Some(id);
     }
 
     /// Clear the active session ID.
+    #[allow(dead_code)]
     pub fn clear_session_id(&mut self) {
         self.session_id = None;
     }
