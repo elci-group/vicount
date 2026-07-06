@@ -1,0 +1,10 @@
+# Rust build artifacts
+/target
+
+# Kaptaind runtime files
+/.kaptaind
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo

@@ -1,0 +1,25 @@
+[package]
+name = "vicount"
+version = "0.2.0"
+edition = "2021"
+authors = ["ViCo"]
+description = "Vicount — a Rust rewrite of Hermes with Vi Desktop integration."
+license = "MIT"
+
+[dependencies]
+vico-desktop-client = { path = "../vico-desktop-client" }
+tokio = { version = "1.40", features = ["full"] }
+crossterm = "0.28"
+ratatui = "0.29"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+unicode-width = "0.2"
+chrono = "0.4"
+
+[[bin]]
+name = "vicount"
+path = "src/main.rs"
