@@ -35,7 +35,7 @@ min_commit_interval = 10
 
 [test]
 command = "cargo test"
-required = false
+required = true
 
 # [staging]
 # mode = "all"        # "all" (default), "cluster" (only changed files), or "pattern"
