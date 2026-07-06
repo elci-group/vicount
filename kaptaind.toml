@@ -34,6 +34,9 @@ min_commit_interval = 10
 command = "cargo test"
 required = false
 
+[safety]
+protect_branches = []
+
 # [staging]
 # mode = "all"        # "all" (default), "cluster" (only changed files), or "pattern"
 # include = ["src/**"] # only used in "pattern" mode
