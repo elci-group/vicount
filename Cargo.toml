@@ -1,6 +1,6 @@
 [package]
 name = "vicount"
-version = "0.2.25"
+version = "0.2.27"
 edition = "2021"
 authors = ["ViCo"]
 description = "Vicount — a Rust rewrite of Hermes with Vi Desktop integration."
@@ -24,6 +24,7 @@ url = "2.5"
 urlencoding = "2.1"
 futures-util = "0.3"
 tokio-util = "0.7"
+toml = "0.8"
 uuid = { version = "1.10", features = ["v4"] }
 
 [[bin]]
