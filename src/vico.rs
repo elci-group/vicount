@@ -259,6 +259,7 @@ fn ws_url_for(base: &str, path: &str, token: &str) -> Result<String> {
 }
 
 /// Events parsed from a `/vico/chat/stream` WebSocket message.
+#[derive(Debug)]
 enum StreamEvent {
     Chunk(String),
     Complete,
@@ -283,6 +284,63 @@ fn parse_stream_message(text: &str) -> StreamEvent {
             StreamEvent::Error(err.to_string())
         }
         _ => StreamEvent::Ignore,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_stream_chunk() {
+        match parse_stream_message(r#"{"type":"stream_chunk","chunk":"hello"}"#) {
+            StreamEvent::Chunk(text) => assert_eq!(text, "hello"),
+            other => panic!("expected Chunk, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_stream_complete() {
+        match parse_stream_message(r#"{"type":"stream_complete","data":{}}"#) {
+            StreamEvent::Complete => {}
+            other => panic!("expected Complete, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_stream_error() {
+        match parse_stream_message(r#"{"type":"error","error":"boom"}"#) {
+            StreamEvent::Error(text) => assert_eq!(text, "boom"),
+            other => panic!("expected Error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_unknown_type_is_ignored() {
+        match parse_stream_message(r#"{"type":"ping"}"#) {
+            StreamEvent::Ignore => {}
+            other => panic!("expected Ignore, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_malformed_json_is_ignored() {
+        match parse_stream_message("not json") {
+            StreamEvent::Ignore => {}
+            other => panic!("expected Ignore, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn ws_url_http_becomes_ws() {
+        let url = ws_url_for("http://127.0.0.1:9876", "/vico/chat/stream", "tok").unwrap();
+        assert!(url.starts_with("ws://127.0.0.1:9876/vico/chat/stream?token=tok"));
+    }
+
+    #[test]
+    fn ws_url_https_becomes_wss() {
+        let url = ws_url_for("https://example.com", "/vico/chat/stream", "tok").unwrap();
+        assert!(url.starts_with("wss://example.com:443/vico/chat/stream?token=tok"));
     }
 }
 
