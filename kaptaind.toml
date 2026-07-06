@@ -20,6 +20,9 @@ r = 0.15
 enabled = true
 branch = "main"
 
+[push.safety]
+protect_branches = []
+
 [capabilities]
 network_push = true
 network_webhooks = false
@@ -33,9 +36,6 @@ min_commit_interval = 10
 [test]
 command = "cargo test"
 required = false
-
-[safety]
-protect_branches = []
 
 # [staging]
 # mode = "all"        # "all" (default), "cluster" (only changed files), or "pattern"

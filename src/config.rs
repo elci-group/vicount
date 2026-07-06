@@ -42,6 +42,7 @@ pub fn config_path() -> Option<PathBuf> {
 }
 
 /// Load the configuration file, falling back to defaults when it is missing or malformed.
+/// Load config from the default XDG config path.
 pub fn load() -> Config {
     let path = match config_path() {
         Some(p) => p,
