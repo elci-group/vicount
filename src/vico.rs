@@ -2,9 +2,12 @@ use std::env;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, mpsc};
+use tokio_tungstenite::tungstenite::Message as WsMessage;
 use tracing::{debug, warn};
+use url::Url;
 use vico_desktop_client::{
     DesktopClient, VicoConfig,
     types::{AtomisePlanRequest, ChatRequest, ContextMessage, OrchestrateSubmitRequest, OrchestrateTask},
