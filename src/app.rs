@@ -1217,6 +1217,54 @@ mod tests {
         let app = app_with_input("", 0);
         assert_eq!(app.input_line_count(), 1);
     }
+
+    #[test]
+    fn slash_matches_filters_by_prefix() {
+        let mut app = App::new();
+        app.input = "/ne".into();
+        let matches: Vec<_> = app.slash_matches().into_iter().map(|c| c.name).collect();
+        assert!(matches.contains(&"new"));
+        assert!(!matches.contains(&"help"));
+    }
+
+    #[test]
+    fn slash_matches_empty_prefix_lists_all() {
+        let mut app = App::new();
+        app.input = "/".into();
+        assert_eq!(app.slash_matches().len(), SLASH_COMMANDS.len());
+    }
+
+    #[test]
+    fn insert_char_updates_input_and_cursor() {
+        let mut app = App::new();
+        app.insert_char('a');
+        app.insert_char('b');
+        assert_eq!(app.input, "ab");
+        assert_eq!(app.cursor, 2);
+    }
+
+    #[test]
+    fn char_to_byte_roundtrip() {
+        assert_eq!(char_to_byte("hello", 0), 0);
+        assert_eq!(char_to_byte("hello", 5), 5);
+        assert_eq!(char_to_byte("héllo", 4), 5); // é is two bytes; last char is byte 5
+        assert_eq!(char_to_byte("héllo", 99), 6);
+    }
+
+    #[test]
+    fn word_left_skips_spaces_and_word() {
+        assert_eq!(word_left("hello world", 11), 6);
+        assert_eq!(word_left("hello world", 5), 0);
+        assert_eq!(word_left("", 0), 0);
+    }
+
+    #[test]
+    fn word_right_skips_spaces_and_word() {
+        assert_eq!(word_right("hello world", 0), 5);
+        assert_eq!(word_right("hello world", 5), 11);
+        assert_eq!(word_right("hello world", 6), 11);
+        assert_eq!(word_right("", 0), 0);
+    }
 }
 
 /// Run the TUI application.
