@@ -78,6 +78,7 @@ impl VicoClient {
             message: message.to_string(),
             context,
             target_agent: None,
+            session_id: None,
         };
         let lock = self.inner.lock().await;
         let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
@@ -131,6 +132,7 @@ impl VicoClient {
             message: message.to_string(),
             context,
             target_agent: None,
+            session_id: None,
         };
         let req_json = serde_json::to_string(&req)?;
         write

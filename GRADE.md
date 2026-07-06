@@ -8,19 +8,19 @@
 
 ## Executive Summary
 
-Vicount is a functional early-phase Rust TUI for ViCo Desktop. Phase 1 (faithful core) is complete, and Phase 2 UX parity is underway with multi-line composer and persistent history landed.
+Vicount is now a credible early-beta TUI for ViCo Desktop. Phase 1 is complete, and Phase 2/3 streaming + history are landed. Test coverage is growing and kaptaind is monitoring the repo.
 
 | Dimension | Initial | Current | Notes |
 |---|---|---|---|
-| Code Quality | 78 | 80 | Clean module split, no compiler warnings, new `history` module is well-isolated. |
-| Test Coverage / Reliability | 45 | 62 | 8 unit tests now passing; still need render/event/integration tests. |
-| TUI UX Completeness | 65 | 72 | Multi-line composer + persistent history; still missing streaming, selection, clipboard, sessions. |
-| ViCo Desktop Integration | 60 | 60 | Chat/plan/run/status wired, but still non-streaming HTTP; no session management yet. |
-| Performance & Efficiency | 55 | 55 | No virtualized transcript; fake word-by-word streaming remains. |
+| Code Quality | 78 | 82 | Clean module split, no warnings, well-isolated history and streaming modules. |
+| Test Coverage / Reliability | 45 | 70 | 15 unit tests passing; still need event/render integration tests. |
+| TUI UX Completeness | 65 | 78 | Multi-line composer, persistent history, and true streaming; still missing sessions, selection, clipboard. |
+| ViCo Desktop Integration | 60 | 72 | Streaming chat over WebSocket; plan/run/status still non-streaming. |
+| Performance & Efficiency | 55 | 65 | Real streaming removes fake word delays; still no transcript virtualization. |
 | Security / Safety | 50 | 50 | No local secret handling; relies on vico-desktop-client auth. |
-| Documentation / Roadmap | 70 | 74 | ROADMAP is tracked; GRADE.md exists; inline docs still sparse. |
-| Build / Distribution | 40 | 45 | Builds locally, kaptaind monitoring enabled; no packaging or release artifacts yet. |
-| **Overall** | **58 / 100** | **65 / 100** | **C+ → B-** | Solid progress; need streaming, sessions, more tests, and packaging to reach A-. |
+| Documentation / Roadmap | 70 | 76 | ROADMAP tracked; GRADE.md maintained; inline docs still sparse. |
+| Build / Distribution | 40 | 50 | Builds locally, kaptaind monitoring enabled; no packaging or release artifacts yet. |
+| **Overall** | **58 / 100** | **72 / 100** | **C+ → B** | Strong progress; need sessions, more tests, transcript virtualization, and packaging to reach A-. |
 
 **Target for A-:** ≥ 82 / 100.
 
@@ -28,7 +28,8 @@ Vicount is a functional early-phase Rust TUI for ViCo Desktop. Phase 1 (faithful
 
 ## Priority Improvements
 
-1. **True streaming responses** via `/vico/chat/stream` WebSocket (biggest UX + performance win)
-2. **Session management** (create, list, resume, titles)
-3. **Expanded test coverage** (event handling, rendering, vico client mocking)
-4. **Packaging basics** (release build, static binary, install script)
+1. **Session management** (create, list, resume, titles)
+2. **Cancellation of in-flight turns** (Ctrl+C while streaming)
+3. **Expanded test coverage** (event handling, rendering, mocked WebSocket)
+4. **Transcript virtualization / memory guardrails**
+5. **Packaging basics** (release build, static binary, install script)

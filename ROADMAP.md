@@ -15,11 +15,11 @@ Vicount is a Rust rewrite of Hermes that preserves the chat-first, slash-command
 - [x] Offline/demo fallback when `VICO_DESKTOP_URL` is unset
 
 ## Phase 2 — UX Parity with Hermes
-- [ ] Persistent input history with `↑/↓` recall and draft preservation
+- [x] Persistent input history with `↑/↓` recall and draft preservation
 - [x] True multi-line composer with `Shift+Enter` newline, word navigation, line-aware cursor movement
 - [ ] Text selection and clipboard integration in composer
 - [ ] Kaomoji / emoji / unicode / ascii busy indicator styles (`/indicator`)
-- [ ] Streaming assistant responses
+- [x] Streaming assistant responses
 - [ ] Session titles, resume by name/ID, and session browser
 - [ ] Per-session model/provider override (`/model <provider>/<model>`)
 - [ ] Background tasks HUD and `/agents` overlay
@@ -28,7 +28,7 @@ Vicount is a Rust rewrite of Hermes that preserves the chat-first, slash-command
 - [ ] Queued messages (`/queue`, `/steer`) while agent is busy
 
 ## Phase 3 — ViCo-Native Performance
-- [ ] Streaming `/vico/chat/stream` integration
+- [x] Streaming `/vico/chat/stream` integration
 - [ ] `/vico/atomise/execute` for plan execution
 - [ ] `/orchestrate/submit` multi-agent task graphs with dependency visualization
 - [ ] `/rag/search` and `/rag/ingest` for skills/project context
