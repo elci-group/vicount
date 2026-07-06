@@ -288,6 +288,7 @@ impl VicoClient {
     }
 
     /// Rename the active or a specific session.
+    #[allow(dead_code)]
     pub async fn rename_session(&self, session_id: &str, name: &str) -> Result<()> {
         if !self.enabled {
             return Ok(());
@@ -303,6 +304,7 @@ impl VicoClient {
     }
 
     /// Delete a session on the server.
+    #[allow(dead_code)]
     pub async fn delete_session(&self, session_id: &str) -> Result<()> {
         if !self.enabled {
             return Ok(());
