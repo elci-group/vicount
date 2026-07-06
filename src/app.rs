@@ -8,6 +8,7 @@ use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, info, warn};
 use vico_desktop_client::types::ContextMessage;
 
@@ -75,6 +76,8 @@ pub struct App {
     pub turn_started: Option<Instant>,
     pub spinner_tick: usize,
 
+    // Cancellation handle for the currently running backend turn.
+    pub cancel_token: Option<CancellationToken>,
 
     // Channel used by async backend to push results back to the UI thread.
     pub result_tx: mpsc::Sender<BackendResult>,
@@ -157,6 +160,7 @@ impl App {
             model: "anthropic/claude-sonnet-4".into(),
             turn_started: None,
             spinner_tick: 0,
+            cancel_token: None,
             result_tx,
             result_rx,
         };
@@ -246,7 +250,15 @@ impl App {
         // Global shortcuts.
         if modifiers == KeyModifiers::CONTROL {
             match code {
-                KeyCode::Char('c') | KeyCode::Char('d') => {
+                KeyCode::Char('c') => {
+                    if self.busy {
+                        self.cancel_turn();
+                    } else {
+                        self.overlay = Overlay::Quit;
+                    }
+                    return;
+                }
+                KeyCode::Char('d') => {
                     self.overlay = Overlay::Quit;
                     return;
                 }
@@ -697,11 +709,13 @@ impl App {
             content: String::new(),
             streaming: true,
         });
+        let cancel = CancellationToken::new();
+        self.cancel_token = Some(cancel.clone());
         let tx = self.result_tx.clone();
         let vico = self.vico.clone();
         let context = self.build_context();
         tokio::spawn(async move {
-            run_backend_task(task, vico, context, tx).await;
+            run_backend_task(task, vico, context, tx, cancel).await;
         });
     }
 
@@ -738,6 +752,7 @@ impl App {
                 }
                 self.busy = false;
                 self.turn_started = None;
+                self.cancel_token = None;
             }
             BackendResult::Failed { error } => {
                 if let Some(last) = self.messages.last_mut() {
@@ -760,6 +775,7 @@ impl App {
                 }
                 self.busy = false;
                 self.turn_started = None;
+                self.cancel_token = None;
             }
             BackendResult::SessionList { items } => {
                 self.session_picker_items = items;
@@ -828,6 +844,14 @@ impl App {
 
     fn scroll_to_bottom(&mut self) {
         self.scroll = usize::MAX;
+    }
+
+    /// Cancel the currently running backend turn, if any.
+    fn cancel_turn(&mut self) {
+        if let Some(token) = self.cancel_token.take() {
+            token.cancel();
+            self.set_status("Cancelling...".into());
+        }
     }
 
     /// Number of logical lines in the composer input (\n-separated).
@@ -907,10 +931,11 @@ async fn run_backend_task(
     vico: VicoClient,
     context: Vec<ContextMessage>,
     tx: mpsc::Sender<BackendResult>,
+    cancel: CancellationToken,
 ) {
     match task {
         BackendTask::Chat { prompt } => {
-            match vico.chat_stream(&prompt, context).await {
+            match vico.chat_stream(&prompt, context, cancel).await {
                 Ok(mut rx) => {
                     while let Some(chunk) = rx.recv().await {
                         match chunk {

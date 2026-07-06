@@ -20,7 +20,7 @@ Vicount is a Rust rewrite of Hermes that preserves the chat-first, slash-command
 - [ ] Text selection and clipboard integration in composer
 - [ ] Kaomoji / emoji / unicode / ascii busy indicator styles (`/indicator`)
 - [x] Streaming assistant responses
-- [ ] Session titles, resume by name/ID, and session browser
+- [x] Session titles, resume by name/ID, and session browser
 - [ ] Per-session model/provider override (`/model <provider>/<model>`)
 - [ ] Background tasks HUD and `/agents` overlay
 - [ ] Live tool progress display (`/verbose` levels)

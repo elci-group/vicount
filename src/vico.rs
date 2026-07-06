@@ -5,6 +5,7 @@ use anyhow::{anyhow, Result};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use tokio::sync::{Mutex, mpsc};
+use tokio_util::sync::CancellationToken;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
 use tracing::{debug, warn};
 use url::Url;
@@ -105,11 +106,12 @@ impl VicoClient {
     /// Stream a chat response via `/vico/chat/stream` WebSocket.
     ///
     /// Returns a channel that yields text chunks as they arrive. The channel
-    /// closes once the stream is complete.
+    /// closes once the stream is complete or `cancel` is triggered.
     pub async fn chat_stream(
         &self,
         message: &str,
         context: Vec<ContextMessage>,
+        cancel: CancellationToken,
     ) -> Result<mpsc::Receiver<Result<String>>> {
         let (tx, rx) = mpsc::channel::<Result<String>>(64);
 
@@ -156,29 +158,37 @@ impl VicoClient {
             .map_err(|e| anyhow!("websocket send failed: {e}"))?;
 
         tokio::spawn(async move {
-            while let Some(msg) = read.next().await {
-                match msg {
-                    Ok(WsMessage::Text(text)) => {
-                        match parse_stream_message(&text) {
-                            StreamEvent::Chunk(chunk) => {
-                                if tx.send(Ok(chunk)).await.is_err() {
-                                    break;
-                                }
-                            }
-                            StreamEvent::Complete => break,
-                            StreamEvent::Error(err) => {
-                                let _ = tx.send(Err(anyhow!(err))).await;
-                                break;
-                            }
-                            StreamEvent::Ignore => {}
-                        }
-                    }
-                    Ok(WsMessage::Close(_)) => break,
-                    Err(e) => {
-                        let _ = tx.send(Err(anyhow!("websocket error: {e}"))).await;
+            loop {
+                tokio::select! {
+                    _ = cancel.cancelled() => {
+                        let _ = tx.send(Err(anyhow!("cancelled by user"))).await;
                         break;
                     }
-                    _ => {}
+                    msg = read.next() => {
+                        match msg {
+                            Some(Ok(WsMessage::Text(text))) => {
+                                match parse_stream_message(&text) {
+                                    StreamEvent::Chunk(chunk) => {
+                                        if tx.send(Ok(chunk)).await.is_err() {
+                                            break;
+                                        }
+                                    }
+                                    StreamEvent::Complete => break,
+                                    StreamEvent::Error(err) => {
+                                        let _ = tx.send(Err(anyhow!(err))).await;
+                                        break;
+                                    }
+                                    StreamEvent::Ignore => {}
+                                }
+                            }
+                            Some(Ok(WsMessage::Close(_))) => break,
+                            Some(Err(e)) => {
+                                let _ = tx.send(Err(anyhow!("websocket error: {e}"))).await;
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
         });

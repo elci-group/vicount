@@ -2044,7 +2044,7 @@ dependencies = [
 
 [[package]]
 name = "vicount"
-version = "0.2.15"
+version = "0.2.16"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2056,6 +2056,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-tungstenite",
+ "tokio-util",
  "tracing",
  "tracing-subscriber",
  "unicode-width 0.2.0",
