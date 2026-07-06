@@ -38,7 +38,8 @@ Vicount is a Rust rewrite of Hermes that preserves the chat-first, slash-command
 
 ## Phase 4 — SOTA Polish
 - [ ] Mouse support, hyperlink click handling, OSC 52 clipboard
-- [ ] Config file (`~/.config/vicount/config.toml`) for providers, skills dirs, keybindings
+- [x] Config file (`~/.config/vicount/config.toml`) for URL, theme, and history limits
+- [ ] Config file: providers, skills dirs, and keybindings
 - [ ] Gateway integration for Telegram/Discord-style command surfaces
 - [ ] Skill hub: install, inspect, and pin skills
 - [ ] Kanban board integration (`/kanban`)

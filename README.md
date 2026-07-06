@@ -1,5 +1,7 @@
 :# Vicount
 
+[![CI](https://github.com/elci-group/vicount/actions/workflows/ci.yml/badge.svg)](https://github.com/elci-group/vicount/actions/workflows/ci.yml)
+
 Vicount is a chat-first terminal UI for [ViCo Desktop](https://github.com/scotia). It is a Rust rewrite of the Hermes-style Ink interface: slash commands, side-panel skill/tool checklists, streaming responses, and session management.
 
 ## Features
@@ -12,6 +14,7 @@ Vicount is a chat-first terminal UI for [ViCo Desktop](https://github.com/scotia
 - **Session browser** (`/sessions`) with server-side create/resume/load
 - **Cancellation** of in-flight turns with `Ctrl+C`
 - **Offline/demo fallback** when `VICO_DESKTOP_URL` is not set
+- **Config file** at `~/.config/vicount/config.toml` for URL, theme, and history limits
 
 ## Requirements
 
@@ -27,7 +30,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/elci-grou
 Or build from source:
 
 ```bash
-git clone https://github.com/YOURUSER/vicount
+git clone https://github.com/elci-group/vicount
 cd vicount
 cargo build --release
 # Binary is at target/release/vicount
@@ -46,6 +49,21 @@ vicount -p "Explain this codebase to me"
 ## Environment
 
 - `VICO_DESKTOP_URL` — URL of the ViCo Desktop gateway (default: offline mode)
+
+## Config
+
+Create `~/.config/vicount/config.toml` (or `$XDG_CONFIG_HOME/vicount/config.toml`):
+
+```toml
+# Optional: used when VICO_DESKTOP_URL is not set.
+vico_url = "http://127.0.0.1:9876"
+
+# Theme: "dark" (default) or "light".
+theme = "dark"
+
+# Maximum persisted input history entries.
+max_history = 1000
+```
 
 ## Development
 
