@@ -102,3 +102,31 @@ impl Theme {
             .add_modifier(Modifier::BOLD)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_theme_has_expected_colors() {
+        let t = Theme::default();
+        assert_eq!(t.background, Color::Black);
+        assert_eq!(t.foreground, Color::Rgb(220, 220, 220));
+        assert_eq!(t.accent, Color::Rgb(255, 95, 162));
+    }
+
+    #[test]
+    fn base_style_uses_foreground_and_background() {
+        let t = Theme::default();
+        let style = t.base();
+        assert_eq!(style.fg, Some(t.foreground));
+        assert_eq!(style.bg, Some(t.background));
+    }
+
+    #[test]
+    fn selected_style_is_bold() {
+        let t = Theme::default();
+        let style = t.selected();
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+}
