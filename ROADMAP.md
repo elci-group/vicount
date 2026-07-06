@@ -33,7 +33,7 @@ Vicount is a Rust rewrite of Hermes that preserves the chat-first, slash-command
 - [ ] `/orchestrate/submit` multi-agent task graphs with dependency visualization
 - [ ] `/rag/search` and `/rag/ingest` for skills/project context
 - [ ] `/user/history` and `/user/preferences` sync
-- [ ] Cancellation and graceful interruption of in-flight turns
+- [x] Cancellation and graceful interruption of in-flight turns
 - [ ] Memory monitor and heap-dump guard (inspired by Hermes TUI)
 
 ## Phase 4 — SOTA Polish

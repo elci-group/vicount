@@ -77,9 +77,17 @@ pub enum BackendTask {
 /// Result delivered from the async backend to the UI.
 #[derive(Debug, Clone)]
 pub enum BackendResult {
-    Append { text: String },
+    Append {
+        text: String,
+    },
     Done,
-    Failed { error: String },
-    SessionList { items: Vec<crate::vico::SessionSummary> },
-    SetMessages { messages: Vec<Message> },
+    Failed {
+        error: String,
+    },
+    SessionList {
+        items: Vec<crate::vico::SessionSummary>,
+    },
+    SetMessages {
+        messages: Vec<Message>,
+    },
 }

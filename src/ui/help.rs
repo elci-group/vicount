@@ -19,8 +19,14 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(block, area);
 
     let mut lines: Vec<Line<'static>> = Vec::new();
-    lines.push(Line::styled("Vicount — ViCo Desktop TUI", theme.highlight()));
-    lines.push(Line::styled("Chat-first, slash-command-heavy interface.", theme.muted()));
+    lines.push(Line::styled(
+        "Vicount — ViCo Desktop TUI",
+        theme.highlight(),
+    ));
+    lines.push(Line::styled(
+        "Chat-first, slash-command-heavy interface.",
+        theme.muted(),
+    ));
     lines.push(Line::from(""));
 
     for cmd in SLASH_COMMANDS {
@@ -40,11 +46,17 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     lines.push(Line::from(""));
     lines.push(Line::styled("Global keys:", theme.highlight()));
     lines.push(Line::styled("  Enter        send message", theme.base()));
-    lines.push(Line::styled("  ↑/↓          cycle input history", theme.base()));
+    lines.push(Line::styled(
+        "  ↑/↓          cycle input history",
+        theme.base(),
+    ));
     lines.push(Line::styled("  Tab          open slash menu", theme.base()));
     lines.push(Line::styled("  Ctrl+C / Ctrl+D  quit", theme.base()));
     lines.push(Line::from(""));
-    lines.push(Line::styled("Press Esc, q, or Enter to close", theme.muted()));
+    lines.push(Line::styled(
+        "Press Esc, q, or Enter to close",
+        theme.muted(),
+    ));
 
     frame.render_widget(Paragraph::new(lines).style(theme.base()), inner);
 }

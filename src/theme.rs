@@ -49,7 +49,10 @@ impl Theme {
     }
 
     pub fn accent(self) -> Style {
-        Style::default().fg(self.accent).bg(self.background).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(self.accent)
+            .bg(self.background)
+            .add_modifier(Modifier::BOLD)
     }
 
     pub fn primary(self) -> Style {
@@ -73,11 +76,16 @@ impl Theme {
     }
 
     pub fn user(self) -> Style {
-        Style::default().fg(self.user_prompt).bg(self.background).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(self.user_prompt)
+            .bg(self.background)
+            .add_modifier(Modifier::BOLD)
     }
 
     pub fn assistant(self) -> Style {
-        Style::default().fg(self.assistant_prompt).bg(self.background)
+        Style::default()
+            .fg(self.assistant_prompt)
+            .bg(self.background)
     }
 
     pub fn selected(self) -> Style {
@@ -88,6 +96,9 @@ impl Theme {
     }
 
     pub fn highlight(self) -> Style {
-        Style::default().fg(self.highlight).bg(self.background).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(self.highlight)
+            .bg(self.background)
+            .add_modifier(Modifier::BOLD)
     }
 }

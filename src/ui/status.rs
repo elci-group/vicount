@@ -13,7 +13,11 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
 
     let parts = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(33), Constraint::Percentage(34), Constraint::Percentage(33)])
+        .constraints([
+            Constraint::Percentage(33),
+            Constraint::Percentage(34),
+            Constraint::Percentage(33),
+        ])
         .split(area);
 
     // Left: session name / source.
@@ -21,7 +25,10 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
         format!("─ {} ", app.session_name),
         Style::default().fg(theme.border).bg(theme.background),
     );
-    frame.render_widget(Paragraph::new(Line::from(left)).style(theme.base()), parts[0]);
+    frame.render_widget(
+        Paragraph::new(Line::from(left)).style(theme.base()),
+        parts[0],
+    );
 
     // Middle: transient status message or busy indicator.
     let middle_text = if !app.status_message.is_empty() {
@@ -32,13 +39,18 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
         "ready".to_string()
     };
     let middle = Span::styled(middle_text, theme.muted().add_modifier(Modifier::DIM));
-    frame.render_widget(Paragraph::new(Line::from(middle)).style(theme.base()), parts[1]);
+    frame.render_widget(
+        Paragraph::new(Line::from(middle)).style(theme.base()),
+        parts[1],
+    );
 
     // Right: model, selected tools/skills, ViCo URL.
     let url = &app.vico_url;
     let prefix = format!(
         "{} │ skills:{} tools:{} │ ",
-        app.model, app.selected_skills_count(), app.selected_tools_count()
+        app.model,
+        app.selected_skills_count(),
+        app.selected_tools_count()
     );
     let suffix = " ─";
     let available = area.width as usize;
@@ -61,7 +73,10 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
         theme.warning()
     };
     let right = Span::styled(right_text, right_style);
-    frame.render_widget(Paragraph::new(Line::from(right)).style(theme.base()), parts[2]);
+    frame.render_widget(
+        Paragraph::new(Line::from(right)).style(theme.base()),
+        parts[2],
+    );
 }
 
 fn spinner_frame(tick: usize) -> &'static str {

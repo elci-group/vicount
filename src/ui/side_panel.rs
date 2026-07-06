@@ -12,10 +12,18 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
     let theme = app.theme;
     let focused = app.side_focused;
 
-    let border_style = if focused { theme.accent() } else { theme.border() };
+    let border_style = if focused {
+        theme.accent()
+    } else {
+        theme.border()
+    };
     let block = Block::default()
         .title(" Hub ")
-        .title_style(if focused { theme.accent() } else { theme.primary() })
+        .title_style(if focused {
+            theme.accent()
+        } else {
+            theme.primary()
+        })
         .borders(Borders::ALL)
         .border_style(border_style)
         .style(theme.base());
@@ -39,7 +47,10 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
         .style(theme.base());
 
     let tab_height = 3;
-    let tab_area = Rect { height: tab_height, ..inner };
+    let tab_area = Rect {
+        height: tab_height,
+        ..inner
+    };
     let list_area = Rect {
         y: inner.y + tab_height,
         height: inner.height.saturating_sub(tab_height),
@@ -90,7 +101,9 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
     }
 
     frame.render_widget(
-        Paragraph::new(Text::from(lines)).style(theme.base()).wrap(Wrap { trim: false }),
+        Paragraph::new(Text::from(lines))
+            .style(theme.base())
+            .wrap(Wrap { trim: false }),
         items_area,
     );
 }

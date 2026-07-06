@@ -31,11 +31,17 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
         } else {
             theme.base()
         };
-        lines.push(Line::styled(format!("{}{} {}", prefix, i + 1, model), style));
+        lines.push(Line::styled(
+            format!("{}{} {}", prefix, i + 1, model),
+            style,
+        ));
     }
 
     lines.push(Line::from(""));
-    lines.push(Line::styled("↑/↓ select · Enter confirm · Esc/q cancel", theme.muted()));
+    lines.push(Line::styled(
+        "↑/↓ select · Enter confirm · Esc/q cancel",
+        theme.muted(),
+    ));
 
     frame.render_widget(Paragraph::new(lines).style(theme.base()), inner);
 }

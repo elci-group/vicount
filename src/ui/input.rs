@@ -27,7 +27,10 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
 
     let prompt_span = Span::styled(prompt, theme.user());
     let prompt_line = Line::from(vec![prompt_span]);
-    frame.render_widget(Paragraph::new(prompt_line).style(theme.base()), input_layout[0]);
+    frame.render_widget(
+        Paragraph::new(prompt_line).style(theme.base()),
+        input_layout[0],
+    );
 
     // Compose display value with cursor indicator.
     let display = render_with_cursor(&app.input, app.cursor, theme);
@@ -58,7 +61,11 @@ fn render_with_cursor(value: &str, cursor: usize, theme: crate::theme::Theme) ->
 
     for (idx, c) in value.chars().enumerate() {
         if c == '\n' {
-            lines.push(build_line(std::mem::take(&mut line_chars), line_cursor, theme));
+            lines.push(build_line(
+                std::mem::take(&mut line_chars),
+                line_cursor,
+                theme,
+            ));
             line_cursor = None;
         } else {
             if idx == cursor {
@@ -88,7 +95,11 @@ fn render_with_cursor(value: &str, cursor: usize, theme: crate::theme::Theme) ->
 }
 
 /// Build a single rendered line, highlighting the cursor character if present.
-fn build_line(chars: Vec<char>, cursor_col: Option<usize>, theme: crate::theme::Theme) -> Line<'static> {
+fn build_line(
+    chars: Vec<char>,
+    cursor_col: Option<usize>,
+    theme: crate::theme::Theme,
+) -> Line<'static> {
     let mut spans: Vec<Span<'static>> = Vec::new();
 
     let Some(pos) = cursor_col else {
@@ -101,13 +112,19 @@ fn build_line(chars: Vec<char>, cursor_col: Option<usize>, theme: crate::theme::
     spans.push(Span::styled(before, theme.base()));
 
     if pos == chars.len() {
-        spans.push(Span::styled(" ", Style::default().bg(theme.accent).fg(Color::Black)));
+        spans.push(Span::styled(
+            " ",
+            Style::default().bg(theme.accent).fg(Color::Black),
+        ));
     } else {
         let cursor_char = chars.get(pos).copied().unwrap_or(' ').to_string();
         let rest: String = chars.iter().skip(pos + 1).collect();
         spans.push(Span::styled(
             cursor_char,
-            Style::default().bg(theme.accent).fg(Color::Black).add_modifier(Modifier::BOLD),
+            Style::default()
+                .bg(theme.accent)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::styled(rest, theme.base()));
     }

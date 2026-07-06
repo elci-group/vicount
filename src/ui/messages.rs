@@ -1,7 +1,9 @@
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap};
+use ratatui::widgets::{
+    Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap,
+};
 use ratatui::Frame;
 
 use crate::app::App;
@@ -24,9 +26,7 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
     }
     app.scroll = app.scroll.min(max_scroll);
 
-    let block = Block::default()
-        .borders(Borders::NONE)
-        .style(theme.base());
+    let block = Block::default().borders(Borders::NONE).style(theme.base());
     let para = Paragraph::new(text)
         .block(block)
         .wrap(Wrap { trim: false })
@@ -45,7 +45,12 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
     }
 }
 
-fn build_message_text(messages: &[Message], theme: Theme, busy: bool, tick: usize) -> Text<'static> {
+fn build_message_text(
+    messages: &[Message],
+    theme: Theme,
+    busy: bool,
+    tick: usize,
+) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
 
     for (idx, msg) in messages.iter().enumerate() {
@@ -69,7 +74,9 @@ fn build_message_text(messages: &[Message], theme: Theme, busy: bool, tick: usiz
                 lines.push(Line::from(""));
             }
             Role::System => {
-                let style = Style::default().fg(theme.muted).add_modifier(Modifier::ITALIC);
+                let style = Style::default()
+                    .fg(theme.muted)
+                    .add_modifier(Modifier::ITALIC);
                 for line in msg.content.lines() {
                     lines.push(Line::styled(line.to_string(), style));
                 }

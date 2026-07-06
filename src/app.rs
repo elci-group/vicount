@@ -3,7 +3,9 @@ use std::io::IsTerminal;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{
+    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers,
+};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
@@ -14,11 +16,9 @@ use vico_desktop_client::types::ContextMessage;
 
 use crate::history;
 use crate::theme::Theme;
-use crate::types::{
-    BackendResult, BackendTask, Message, Overlay, Role, SideTab, SlashCommand,
-};
-use crate::vico::SessionSummary;
+use crate::types::{BackendResult, BackendTask, Message, Overlay, Role, SideTab, SlashCommand};
 use crate::ui;
+use crate::vico::SessionSummary;
 use crate::vico::VicoClient;
 
 /// A single selectable item in the side-panel checklist.
@@ -86,17 +86,61 @@ pub struct App {
 
 /// The canonical slash command menu used by Vicount.
 pub const SLASH_COMMANDS: &[SlashCommand] = &[
-    SlashCommand { name: "new", description: "Start a new session", args_hint: "[name]" },
-    SlashCommand { name: "sessions", description: "Browse and resume sessions", args_hint: "" },
-    SlashCommand { name: "model", description: "Switch model for this session", args_hint: "" },
-    SlashCommand { name: "skills", description: "Focus/toggle skills checklist", args_hint: "" },
-    SlashCommand { name: "tools", description: "Focus/toggle tools checklist", args_hint: "" },
-    SlashCommand { name: "reset", description: "Clear session", args_hint: "" },
-    SlashCommand { name: "plan", description: "Call ViCo /vico/atomise/plan", args_hint: "<prompt>" },
-    SlashCommand { name: "run", description: "Call ViCo /orchestrate/submit", args_hint: "<prompt>" },
-    SlashCommand { name: "status", description: "Show ViCo system status", args_hint: "" },
-    SlashCommand { name: "help", description: "Show available commands", args_hint: "" },
-    SlashCommand { name: "quit", description: "Exit Vicount", args_hint: "" },
+    SlashCommand {
+        name: "new",
+        description: "Start a new session",
+        args_hint: "[name]",
+    },
+    SlashCommand {
+        name: "sessions",
+        description: "Browse and resume sessions",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "model",
+        description: "Switch model for this session",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "skills",
+        description: "Focus/toggle skills checklist",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "tools",
+        description: "Focus/toggle tools checklist",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "reset",
+        description: "Clear session",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "plan",
+        description: "Call ViCo /vico/atomise/plan",
+        args_hint: "<prompt>",
+    },
+    SlashCommand {
+        name: "run",
+        description: "Call ViCo /orchestrate/submit",
+        args_hint: "<prompt>",
+    },
+    SlashCommand {
+        name: "status",
+        description: "Show ViCo system status",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "help",
+        description: "Show available commands",
+        args_hint: "",
+    },
+    SlashCommand {
+        name: "quit",
+        description: "Exit Vicount",
+        args_hint: "",
+    },
 ];
 
 impl App {
@@ -107,19 +151,63 @@ impl App {
 
         // Seed the side panels with demo items until the gateway can supply real lists.
         let skills = vec![
-            CheckItem { name: "code-review".into(), description: "Review code changes".into(), selected: false },
-            CheckItem { name: "debug".into(), description: "Debug assistant".into(), selected: false },
-            CheckItem { name: "docs".into(), description: "Documentation writer".into(), selected: false },
-            CheckItem { name: "test-writer".into(), description: "Generate tests".into(), selected: false },
-            CheckItem { name: "planner".into(), description: "Task planner".into(), selected: false },
+            CheckItem {
+                name: "code-review".into(),
+                description: "Review code changes".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "debug".into(),
+                description: "Debug assistant".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "docs".into(),
+                description: "Documentation writer".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "test-writer".into(),
+                description: "Generate tests".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "planner".into(),
+                description: "Task planner".into(),
+                selected: false,
+            },
         ];
         let tools = vec![
-            CheckItem { name: "bash".into(), description: "Run shell commands".into(), selected: true },
-            CheckItem { name: "read_file".into(), description: "Read files".into(), selected: true },
-            CheckItem { name: "write_file".into(), description: "Write files".into(), selected: false },
-            CheckItem { name: "grep".into(), description: "Search files".into(), selected: false },
-            CheckItem { name: "web_search".into(), description: "Search the web".into(), selected: false },
-            CheckItem { name: "browser".into(), description: "Browser automation".into(), selected: false },
+            CheckItem {
+                name: "bash".into(),
+                description: "Run shell commands".into(),
+                selected: true,
+            },
+            CheckItem {
+                name: "read_file".into(),
+                description: "Read files".into(),
+                selected: true,
+            },
+            CheckItem {
+                name: "write_file".into(),
+                description: "Write files".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "grep".into(),
+                description: "Search files".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "web_search".into(),
+                description: "Search the web".into(),
+                selected: false,
+            },
+            CheckItem {
+                name: "browser".into(),
+                description: "Browser automation".into(),
+                selected: false,
+            },
         ];
 
         let mut app = Self {
@@ -167,7 +255,9 @@ impl App {
 
         app.add_system_message("Welcome to Vicount. Type /help for commands.".into());
         if !app.vico.is_online() {
-            app.add_system_message("Offline mode — VICO_DESKTOP_URL is not set. Operating in echo/demo mode.".into());
+            app.add_system_message(
+                "Offline mode — VICO_DESKTOP_URL is not set. Operating in echo/demo mode.".into(),
+            );
         }
         app
     }
@@ -223,7 +313,11 @@ impl App {
         }
 
         terminal::disable_raw_mode()?;
-        crossterm::execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+        crossterm::execute!(
+            terminal.backend_mut(),
+            LeaveAlternateScreen,
+            DisableMouseCapture
+        )?;
         Ok(())
     }
 
@@ -468,7 +562,10 @@ impl App {
                 self.session_picker_idx = (self.session_picker_idx + 1).min(n - 1);
             }
             KeyCode::Enter => {
-                let selected = self.session_picker_items.get(self.session_picker_idx).cloned();
+                let selected = self
+                    .session_picker_items
+                    .get(self.session_picker_idx)
+                    .cloned();
                 if let Some(s) = selected {
                     self.session_name = s.name.clone();
                     self.session_id = Some(s.session_id.clone());
@@ -494,7 +591,9 @@ impl App {
                 }
                 Err(e) => {
                     let _ = tx
-                        .send(BackendResult::Failed { error: e.to_string() })
+                        .send(BackendResult::Failed {
+                            error: e.to_string(),
+                        })
                         .await;
                 }
             }
@@ -541,7 +640,11 @@ impl App {
             KeyCode::Enter => {
                 self.side_focused = false;
                 let count = self.selected_skills_count() + self.selected_tools_count();
-                self.set_status(format!("Applied {} selection{}", count, if count == 1 { "" } else { "s" }));
+                self.set_status(format!(
+                    "Applied {} selection{}",
+                    count,
+                    if count == 1 { "" } else { "s" }
+                ));
             }
             KeyCode::Esc | KeyCode::Char('q') => {
                 self.side_focused = false;
@@ -639,13 +742,13 @@ impl App {
                 tokio::spawn(async move {
                     match vico.list_sessions(Some(50)).await {
                         Ok(items) => {
-                            let _ = tx
-                                .send(BackendResult::SessionList { items })
-                                .await;
+                            let _ = tx.send(BackendResult::SessionList { items }).await;
                         }
                         Err(e) => {
                             let _ = tx
-                                .send(BackendResult::Failed { error: e.to_string() })
+                                .send(BackendResult::Failed {
+                                    error: e.to_string(),
+                                })
                                 .await;
                         }
                     }
@@ -676,7 +779,9 @@ impl App {
                     return;
                 }
                 self.add_user_message(format!("/plan {}", rest));
-                self.spawn_backend(BackendTask::Plan { prompt: rest.to_string() });
+                self.spawn_backend(BackendTask::Plan {
+                    prompt: rest.to_string(),
+                });
             }
             "run" => {
                 if rest.is_empty() {
@@ -684,7 +789,9 @@ impl App {
                     return;
                 }
                 self.add_user_message(format!("/run {}", rest));
-                self.spawn_backend(BackendTask::Run { prompt: rest.to_string() });
+                self.spawn_backend(BackendTask::Run {
+                    prompt: rest.to_string(),
+                });
             }
             "status" => {
                 self.spawn_backend(BackendTask::Status);
@@ -934,35 +1041,37 @@ async fn run_backend_task(
     cancel: CancellationToken,
 ) {
     match task {
-        BackendTask::Chat { prompt } => {
-            match vico.chat_stream(&prompt, context, cancel).await {
-                Ok(mut rx) => {
-                    while let Some(chunk) = rx.recv().await {
-                        match chunk {
-                            Ok(text) => {
-                                if tx.send(BackendResult::Append { text }).await.is_err() {
-                                    return;
-                                }
-                            }
-                            Err(e) => {
-                                let _ = tx
-                                    .send(BackendResult::Failed { error: e.to_string() })
-                                    .await;
-                                let _ = tx.send(BackendResult::Done).await;
+        BackendTask::Chat { prompt } => match vico.chat_stream(&prompt, context, cancel).await {
+            Ok(mut rx) => {
+                while let Some(chunk) = rx.recv().await {
+                    match chunk {
+                        Ok(text) => {
+                            if tx.send(BackendResult::Append { text }).await.is_err() {
                                 return;
                             }
                         }
+                        Err(e) => {
+                            let _ = tx
+                                .send(BackendResult::Failed {
+                                    error: e.to_string(),
+                                })
+                                .await;
+                            let _ = tx.send(BackendResult::Done).await;
+                            return;
+                        }
                     }
-                    let _ = tx.send(BackendResult::Done).await;
                 }
-                Err(e) => {
-                    let _ = tx
-                        .send(BackendResult::Failed { error: e.to_string() })
-                        .await;
-                    let _ = tx.send(BackendResult::Done).await;
-                }
+                let _ = tx.send(BackendResult::Done).await;
             }
-        }
+            Err(e) => {
+                let _ = tx
+                    .send(BackendResult::Failed {
+                        error: e.to_string(),
+                    })
+                    .await;
+                let _ = tx.send(BackendResult::Done).await;
+            }
+        },
         BackendTask::Plan { prompt } => match vico.plan(&prompt, context).await {
             Ok(text) => {
                 let _ = tx.send(BackendResult::Append { text }).await;
@@ -970,7 +1079,9 @@ async fn run_backend_task(
             }
             Err(e) => {
                 let _ = tx
-                    .send(BackendResult::Failed { error: e.to_string() })
+                    .send(BackendResult::Failed {
+                        error: e.to_string(),
+                    })
                     .await;
                 let _ = tx.send(BackendResult::Done).await;
             }
@@ -982,7 +1093,9 @@ async fn run_backend_task(
             }
             Err(e) => {
                 let _ = tx
-                    .send(BackendResult::Failed { error: e.to_string() })
+                    .send(BackendResult::Failed {
+                        error: e.to_string(),
+                    })
                     .await;
                 let _ = tx.send(BackendResult::Done).await;
             }
@@ -994,7 +1107,9 @@ async fn run_backend_task(
             }
             Err(e) => {
                 let _ = tx
-                    .send(BackendResult::Failed { error: e.to_string() })
+                    .send(BackendResult::Failed {
+                        error: e.to_string(),
+                    })
                     .await;
                 let _ = tx.send(BackendResult::Done).await;
             }
@@ -1004,7 +1119,10 @@ async fn run_backend_task(
 
 /// Convert a char index to a byte index in `s`.
 fn char_to_byte(s: &str, char_idx: usize) -> usize {
-    s.char_indices().nth(char_idx).map(|(i, _)| i).unwrap_or(s.len())
+    s.char_indices()
+        .nth(char_idx)
+        .map(|(i, _)| i)
+        .unwrap_or(s.len())
 }
 
 /// Number of chars in `s`.

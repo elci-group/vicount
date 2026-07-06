@@ -4,7 +4,9 @@ use ratatui::Frame;
 
 use crate::app::App;
 use crate::types::Overlay;
-use crate::ui::{help, input, messages, model_picker, quit, session_picker, side_panel, slash_menu, status};
+use crate::ui::{
+    help, input, messages, model_picker, quit, session_picker, side_panel, slash_menu, status,
+};
 
 /// Draw the main chat layout.
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -17,7 +19,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let input_height = (input_lines + 2).clamp(3, (area.height as f32 * 0.4).max(5.0) as u16);
     let vertical = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(5), Constraint::Length(input_height), Constraint::Length(1)])
+        .constraints([
+            Constraint::Min(5),
+            Constraint::Length(input_height),
+            Constraint::Length(1),
+        ])
         .split(area);
 
     let main_area = vertical[0];

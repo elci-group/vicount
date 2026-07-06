@@ -34,9 +34,7 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
             let label = if session.message_count > 0 {
                 format!(
                     "{} {} ({} messages)",
-                    prefix,
-                    session.name,
-                    session.message_count
+                    prefix, session.name, session.message_count
                 )
             } else {
                 format!("{} {}", prefix, session.name)
@@ -46,7 +44,10 @@ pub fn draw(frame: &mut Frame, app: &mut App, area: Rect) {
     }
 
     lines.push(Line::from(""));
-    lines.push(Line::styled("↑/↓ select · Enter resume · Esc/q cancel", theme.muted()));
+    lines.push(Line::styled(
+        "↑/↓ select · Enter resume · Esc/q cancel",
+        theme.muted(),
+    ));
 
     frame.render_widget(Paragraph::new(lines).style(theme.base()), inner);
 }

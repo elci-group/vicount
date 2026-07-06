@@ -1,18 +1,20 @@
 use std::env;
 use std::sync::Arc;
 
+use crate::types::{Message, Role};
 use anyhow::{anyhow, Result};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
-use tokio::sync::{Mutex, mpsc};
-use tokio_util::sync::CancellationToken;
+use tokio::sync::{mpsc, Mutex};
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, warn};
 use url::Url;
-use crate::types::{Message, Role};
 use vico_desktop_client::{
+    types::{
+        AtomisePlanRequest, ChatRequest, ContextMessage, OrchestrateSubmitRequest, OrchestrateTask,
+    },
     DesktopClient, VicoConfig,
-    types::{AtomisePlanRequest, ChatRequest, ContextMessage, OrchestrateSubmitRequest, OrchestrateTask},
 };
 
 /// Async wrapper around the `vico-desktop-client` crate.
@@ -84,10 +86,7 @@ impl VicoClient {
     /// Send a normal chat message. Returns the assistant response text.
     pub async fn chat(&self, message: &str, context: Vec<ContextMessage>) -> Result<String> {
         if !self.enabled {
-            return Ok(format!(
-                "Echo: {}",
-                message.lines().next().unwrap_or("")
-            ));
+            return Ok(format!("Echo: {}", message.lines().next().unwrap_or("")));
         }
         self.ensure_auth().await?;
         let req = ChatRequest {
@@ -97,7 +96,9 @@ impl VicoClient {
             session_id: self.session_id.clone(),
         };
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
         let res: Value = client.chat(&req).await.map_err(|e| anyhow!("{e}"))?;
         debug!("chat response: {res}");
         extract_response_text(res, "response")
@@ -133,7 +134,9 @@ impl VicoClient {
         self.ensure_auth().await?;
         let token = {
             let lock = self.inner.lock().await;
-            let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+            let client = lock
+                .as_ref()
+                .ok_or_else(|| anyhow!("client not available"))?;
             client.token().map(String::from)
         };
         let token = token.ok_or_else(|| anyhow!("not authenticated"))?;
@@ -153,7 +156,7 @@ impl VicoClient {
         };
         let req_json = serde_json::to_string(&req)?;
         write
-            .send(WsMessage::Text(req_json.into()))
+            .send(WsMessage::Text(req_json))
             .await
             .map_err(|e| anyhow!("websocket send failed: {e}"))?;
 
@@ -211,8 +214,13 @@ impl VicoClient {
             trace_id: None,
         };
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
-        let res: Value = client.atomise_plan(&req).await.map_err(|e| anyhow!("{e}"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
+        let res: Value = client
+            .atomise_plan(&req)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
         debug!("plan response: {res}");
         extract_response_text(res, "plan")
     }
@@ -235,8 +243,13 @@ impl VicoClient {
             }],
         };
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
-        let res: Value = client.orchestrate_submit(&req).await.map_err(|e| anyhow!("{e}"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
+        let res: Value = client
+            .orchestrate_submit(&req)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
         debug!("orchestrate response: {res}");
         extract_response_text(res, "graph_id")
     }
@@ -249,8 +262,13 @@ impl VicoClient {
         }
         self.ensure_auth().await?;
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
-        let res: Value = client.rag_search(query, top_k).await.map_err(|e| anyhow!("{e}"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
+        let res: Value = client
+            .rag_search(query, top_k)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
         debug!("rag response: {res}");
         extract_response_text(res, "results")
     }
@@ -262,7 +280,9 @@ impl VicoClient {
         }
         self.ensure_auth().await?;
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
         let res: Value = client.system_health().await.map_err(|e| anyhow!("{e}"))?;
         debug!("system health response: {res}");
         Ok(serde_json::to_string(&res).unwrap_or_else(|_| "healthy".to_string()))
@@ -275,8 +295,13 @@ impl VicoClient {
         }
         self.ensure_auth().await?;
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
-        let res: Value = client.list_sessions(limit).await.map_err(|e| anyhow!("{e}"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
+        let res: Value = client
+            .list_sessions(limit)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
         debug!("list sessions response: {res}");
         parse_session_list(res)
     }
@@ -287,7 +312,9 @@ impl VicoClient {
         if self.enabled {
             self.ensure_auth().await?;
             let lock = self.inner.lock().await;
-            let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+            let client = lock
+                .as_ref()
+                .ok_or_else(|| anyhow!("client not available"))?;
             client
                 .create_session(&id, name, None)
                 .await
@@ -305,7 +332,9 @@ impl VicoClient {
         }
         self.ensure_auth().await?;
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
         client
             .rename_session(session_id, name)
             .await
@@ -321,7 +350,9 @@ impl VicoClient {
         }
         self.ensure_auth().await?;
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
         client
             .delete_session(session_id)
             .await
@@ -336,7 +367,9 @@ impl VicoClient {
         }
         self.ensure_auth().await?;
         let lock = self.inner.lock().await;
-        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let client = lock
+            .as_ref()
+            .ok_or_else(|| anyhow!("client not available"))?;
         let res: Value = client
             .session_history(session_id)
             .await
@@ -356,7 +389,9 @@ pub struct SessionSummary {
 
 fn parse_session_list(value: Value) -> Result<Vec<SessionSummary>> {
     let data = value.get("data").cloned().unwrap_or(Value::Array(vec![]));
-    let array = data.as_array().ok_or_else(|| anyhow!("sessions data is not an array"))?;
+    let array = data
+        .as_array()
+        .ok_or_else(|| anyhow!("sessions data is not an array"))?;
     let mut sessions = Vec::new();
     for item in array {
         let session_id = item
@@ -369,7 +404,10 @@ fn parse_session_list(value: Value) -> Result<Vec<SessionSummary>> {
             .and_then(|v| v.as_str())
             .unwrap_or(&session_id)
             .to_string();
-        let message_count = item.get("message_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+        let message_count = item
+            .get("message_count")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as usize;
         sessions.push(SessionSummary {
             session_id,
             name,
@@ -381,7 +419,9 @@ fn parse_session_list(value: Value) -> Result<Vec<SessionSummary>> {
 
 fn parse_session_history(value: Value) -> Result<Vec<Message>> {
     let data = value.get("data").cloned().unwrap_or(Value::Array(vec![]));
-    let array = data.as_array().ok_or_else(|| anyhow!("session history is not an array"))?;
+    let array = data
+        .as_array()
+        .ok_or_else(|| anyhow!("session history is not an array"))?;
     let mut messages = Vec::new();
     for item in array {
         let role_str = item.get("role").and_then(|v| v.as_str()).unwrap_or("user");
@@ -395,7 +435,11 @@ fn parse_session_history(value: Value) -> Result<Vec<Message>> {
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
-        messages.push(Message { role, content, streaming: false });
+        messages.push(Message {
+            role,
+            content,
+            streaming: false,
+        });
     }
     Ok(messages)
 }
@@ -438,7 +482,10 @@ fn parse_stream_message(text: &str) -> StreamEvent {
         }
         Some("stream_complete") => StreamEvent::Complete,
         Some("error") => {
-            let err = value.get("error").and_then(|v| v.as_str()).unwrap_or("streaming error");
+            let err = value
+                .get("error")
+                .and_then(|v| v.as_str())
+                .unwrap_or("streaming error");
             StreamEvent::Error(err.to_string())
         }
         _ => StreamEvent::Ignore,
