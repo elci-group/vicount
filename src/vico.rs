@@ -21,6 +21,7 @@ use vico_desktop_client::{
 pub struct VicoClient {
     inner: Arc<Mutex<Option<DesktopClient>>>,
     pub enabled: bool,
+    pub session_id: Option<String>,
 }
 
 impl VicoClient {
@@ -45,7 +46,18 @@ impl VicoClient {
         Self {
             inner: Arc::new(Mutex::new(client)),
             enabled,
+            session_id: None,
         }
+    }
+
+    /// Set the active session ID used for chat and plan requests.
+    pub fn set_session_id(&mut self, id: String) {
+        self.session_id = Some(id);
+    }
+
+    /// Clear the active session ID.
+    pub fn clear_session_id(&mut self) {
+        self.session_id = None;
     }
 
     pub fn is_online(&self) -> bool {
