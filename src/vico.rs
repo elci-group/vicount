@@ -35,6 +35,7 @@ pub struct VicoClient {
 
 impl VicoClient {
     /// Create a new client from environment variables only.
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::new_with_config(&Config::default())
     }
