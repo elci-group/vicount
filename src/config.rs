@@ -138,4 +138,3 @@ max_history = 200
         let _ = fs::remove_dir_all(&tmp);
     }
 }
-
