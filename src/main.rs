@@ -6,12 +6,14 @@ use tracing::{error, info};
 use vico_desktop_client::types::ContextMessage;
 
 mod app;
+mod config;
 mod history;
 mod theme;
 mod types;
 mod ui;
 mod vico;
 
+use crate::config::Config;
 use crate::vico::VicoClient;
 
 #[derive(Parser, Debug)]
@@ -31,21 +33,22 @@ struct Cli {
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let cli = Cli::parse();
+    let config = config::load();
 
     if let Some(prompt) = cli.prompt {
-        return run_non_interactive(&prompt).await;
+        return run_non_interactive(&prompt, &config).await;
     }
 
     if cli.tui || cli.prompt.is_none() {
-        return app::run_app().await;
+        return app::run_app(config).await;
     }
 
     Ok(())
 }
 
-async fn run_non_interactive(prompt: &str) -> Result<()> {
+async fn run_non_interactive(prompt: &str, config: &Config) -> Result<()> {
     info!("non-interactive mode: {prompt}");
-    let vico = VicoClient::new();
+    let vico = VicoClient::new_with_config(config);
 
     let url = vico.url();
     if url == "offline" {

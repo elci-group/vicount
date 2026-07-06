@@ -21,6 +21,12 @@ pub struct Theme {
 
 impl Default for Theme {
     fn default() -> Self {
+        Self::dark()
+    }
+}
+
+impl Theme {
+    pub fn dark() -> Self {
         Self {
             background: Color::Black,
             foreground: Color::Rgb(220, 220, 220),
@@ -37,9 +43,33 @@ impl Default for Theme {
             selected_bg: Color::Rgb(40, 40, 60),
         }
     }
-}
 
-impl Theme {
+    pub fn light() -> Self {
+        Self {
+            background: Color::Rgb(250, 250, 250),
+            foreground: Color::Rgb(30, 30, 30),
+            muted: Color::Rgb(100, 100, 100),
+            accent: Color::Rgb(200, 40, 120),
+            primary: Color::Rgb(30, 120, 200),
+            success: Color::Rgb(40, 160, 80),
+            warning: Color::Rgb(180, 130, 20),
+            error: Color::Rgb(200, 50, 50),
+            border: Color::Rgb(180, 180, 180),
+            user_prompt: Color::Rgb(180, 110, 20),
+            assistant_prompt: Color::Rgb(30, 120, 200),
+            highlight: Color::Rgb(160, 140, 20),
+            selected_bg: Color::Rgb(220, 220, 240),
+        }
+    }
+
+    pub fn from_name(name: &str) -> Self {
+        match name.to_ascii_lowercase().as_str() {
+            "light" => Self::light(),
+            _ => Self::dark(),
+        }
+    }
+
+
     pub fn base(self) -> Style {
         Style::default().fg(self.foreground).bg(self.background)
     }
@@ -128,5 +158,12 @@ mod tests {
         let t = Theme::default();
         let style = t.selected();
         assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn from_name_selects_light_and_dark() {
+        assert_eq!(Theme::from_name("light").background, Theme::light().background);
+        assert_eq!(Theme::from_name("DARK").background, Theme::dark().background);
+        assert_eq!(Theme::from_name("unknown").background, Theme::dark().background);
     }
 }

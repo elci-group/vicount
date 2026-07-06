@@ -14,6 +14,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{debug, info, warn};
 use vico_desktop_client::types::ContextMessage;
 
+use crate::config::Config;
 use crate::history;
 use crate::theme::Theme;
 use crate::types::{BackendResult, BackendTask, Message, Overlay, Role, SideTab, SlashCommand};
@@ -144,10 +145,16 @@ pub const SLASH_COMMANDS: &[SlashCommand] = &[
 ];
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         let (result_tx, result_rx) = mpsc::channel::<BackendResult>(64);
-        let vico = VicoClient::new();
+        let vico = VicoClient::new_with_config(&config);
         let vico_url = vico.url();
+        let max_history = config.max_history.unwrap_or(history::MAX_HISTORY);
+        let theme = config
+            .theme
+            .as_deref()
+            .map(Theme::from_name)
+            .unwrap_or_default();
 
         // Seed the side panels with demo items until the gateway can supply real lists.
         let skills = vec![
@@ -211,7 +218,7 @@ impl App {
         ];
 
         let mut app = Self {
-            theme: Theme::default(),
+            theme,
             vico,
             vico_url,
             should_quit: false,
@@ -219,7 +226,7 @@ impl App {
             scroll: 0,
             input: String::new(),
             cursor: 0,
-            history: history::load_history(history::MAX_HISTORY),
+            history: history::load_history(max_history),
             history_idx: None,
             history_draft: String::new(),
             side_tab: SideTab::Skills,
@@ -1159,9 +1166,10 @@ fn word_right(s: &str, char_pos: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::Config;
 
     fn app_with_input(input: &str, cursor: usize) -> App {
-        let mut app = App::new();
+        let mut app = App::new(Config::default());
         app.input = input.to_string();
         app.cursor = cursor;
         app
@@ -1220,7 +1228,7 @@ mod tests {
 
     #[test]
     fn slash_matches_filters_by_prefix() {
-        let mut app = App::new();
+        let mut app = App::new(Config::default());
         app.input = "/ne".into();
         let matches: Vec<_> = app.slash_matches().into_iter().map(|c| c.name).collect();
         assert!(matches.contains(&"new"));
@@ -1229,14 +1237,14 @@ mod tests {
 
     #[test]
     fn slash_matches_empty_prefix_lists_all() {
-        let mut app = App::new();
+        let mut app = App::new(Config::default());
         app.input = "/".into();
         assert_eq!(app.slash_matches().len(), SLASH_COMMANDS.len());
     }
 
     #[test]
     fn insert_char_updates_input_and_cursor() {
-        let mut app = App::new();
+        let mut app = App::new(Config::default());
         app.insert_char('a');
         app.insert_char('b');
         assert_eq!(app.input, "ab");
@@ -1268,11 +1276,11 @@ mod tests {
 }
 
 /// Run the TUI application.
-pub async fn run_app() -> Result<()> {
+pub async fn run_app(config: Config) -> Result<()> {
     info!("starting Vicount TUI");
     if !std::io::stdin().is_terminal() {
         anyhow::bail!("Vicount TUI requires an interactive terminal (try `vicount -p \"hello\"` for non-interactive mode)");
     }
-    let mut app = App::new();
+    let mut app = App::new(config);
     app.run().await
 }

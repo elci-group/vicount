@@ -86,9 +86,20 @@ mod tests {
         assert!(path.starts_with("/tmp/xdg-test"));
     }
 
+    fn temp_config_dir() -> PathBuf {
+        env::temp_dir().join(format!(
+            "vicount-cfg-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ))
+    }
+
     #[test]
     fn load_missing_config_returns_defaults() {
-        let tmp = env::temp_dir().join(format!("vicount-cfg-test-{}", std::process::id()));
+        let tmp = temp_config_dir();
         env::set_var("XDG_CONFIG_HOME", &tmp);
         let _ = fs::remove_dir_all(&tmp);
         let cfg = load();
@@ -100,7 +111,7 @@ mod tests {
 
     #[test]
     fn load_valid_config_file() {
-        let tmp = env::temp_dir().join(format!("vicount-cfg-test-{}", std::process::id()));
+        let tmp = temp_config_dir();
         env::set_var("XDG_CONFIG_HOME", &tmp);
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(&tmp.join("vicount")).unwrap();

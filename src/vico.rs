@@ -11,29 +11,53 @@ use tokio_util::sync::CancellationToken;
 use tracing::{debug, warn};
 use url::Url;
 use vico_desktop_client::{
+    config::{DEFAULT_VICO_DESKTOP_URL, DEFAULT_VICO_VEE_URL},
     types::{
         AtomisePlanRequest, ChatRequest, ContextMessage, OrchestrateSubmitRequest, OrchestrateTask,
     },
     DesktopClient, VicoConfig,
 };
 
+use crate::config::Config;
+
 /// Async wrapper around the `vico-desktop-client` crate.
 ///
-/// If `VICO_DESKTOP_URL` is not set, the client operates in offline/demo mode
-/// and returns canned responses instead of hitting the network.
+/// If `VICO_DESKTOP_URL` is not set and no URL is provided by the config file,
+/// the client operates in offline/demo mode and returns canned responses instead
+/// of hitting the network.
 #[derive(Clone)]
 pub struct VicoClient {
     inner: Arc<Mutex<Option<DesktopClient>>>,
     pub enabled: bool,
     pub session_id: Option<String>,
+    desktop_url: String,
 }
 
 impl VicoClient {
-    /// Create a new client. If `VICO_DESKTOP_URL` is set, the client is
-    /// authenticated lazily on first use.
+    /// Create a new client from environment variables only.
     pub fn new() -> Self {
-        let cfg = VicoConfig::from_env();
-        let env_set = env::var("VICO_DESKTOP_URL").is_ok();
+        Self::new_with_config(&Config::default())
+    }
+
+    /// Create a new client, preferring `VICO_DESKTOP_URL` and falling back to
+    /// the config file's `vico_url`.
+    pub fn new_with_config(config: &Config) -> Self {
+        let env_url = env::var("VICO_DESKTOP_URL").ok();
+        let desktop_url = env_url
+            .clone()
+            .or_else(|| config.vico_url.clone())
+            .unwrap_or_else(|| DEFAULT_VICO_DESKTOP_URL.to_string());
+
+        let cfg = VicoConfig {
+            desktop_url: strip_trailing_slash(desktop_url.clone()),
+            vee_url: strip_trailing_slash(
+                env::var("VICO_VEE_URL").unwrap_or_else(|_| DEFAULT_VICO_VEE_URL.to_string()),
+            ),
+            vee_token: env::var("VICO_VEE_TOKEN").ok(),
+            otel_endpoint: env::var("OTEL_EXPORTER_OTLP_ENDPOINT").ok(),
+        };
+
+        let env_set = env_url.is_some() || config.vico_url.is_some();
         let client = if env_set {
             match DesktopClient::new(cfg) {
                 Ok(c) => Some(c),
@@ -51,6 +75,7 @@ impl VicoClient {
             inner: Arc::new(Mutex::new(client)),
             enabled,
             session_id: None,
+            desktop_url,
         }
     }
 
@@ -71,7 +96,11 @@ impl VicoClient {
     }
 
     pub fn url(&self) -> String {
-        env::var("VICO_DESKTOP_URL").unwrap_or_else(|_| "offline".to_string())
+        if self.enabled {
+            self.desktop_url.clone()
+        } else {
+            "offline".to_string()
+        }
     }
 
     async fn ensure_auth(&self) -> Result<()> {
@@ -442,6 +471,10 @@ fn parse_session_history(value: Value) -> Result<Vec<Message>> {
         });
     }
     Ok(messages)
+}
+
+fn strip_trailing_slash(s: String) -> String {
+    s.trim_end_matches('/').to_string()
 }
 
 /// Convert an HTTP URL into a WebSocket URL and append the auth token.
