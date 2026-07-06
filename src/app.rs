@@ -8,9 +8,10 @@ use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use tokio::sync::mpsc;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use vico_desktop_client::types::ContextMessage;
 
+use crate::history;
 use crate::theme::Theme;
 use crate::types::{
     BackendResult, BackendTask, Message, Overlay, Role, SideTab, SlashCommand,
@@ -124,7 +125,7 @@ impl App {
             scroll: 0,
             input: String::new(),
             cursor: 0,
-            history: vec![],
+            history: history::load_history(history::MAX_HISTORY),
             history_idx: None,
             history_draft: String::new(),
             side_tab: SideTab::Skills,
@@ -553,6 +554,9 @@ impl App {
         self.history.push(text.clone());
         self.history_idx = None;
         self.history_draft.clear();
+        if let Err(e) = history::append_history(&text) {
+            warn!("failed to persist history: {e}");
+        }
 
         if text.starts_with('/') {
             let trimmed = text.strip_prefix('/').unwrap_or("");

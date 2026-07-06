@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, warn};
 
 /// Maximum number of recent entries to keep in memory.
-const MAX_HISTORY: usize = 1000;
+pub const MAX_HISTORY: usize = 1000;
 
 /// A single persisted input entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +111,7 @@ pub fn append_history(text: &str) -> Result<()> {
 }
 
 /// Trim the on-disk history file to the most recent `limit` entries.
+#[allow(dead_code)]
 pub fn trim_history(limit: usize) -> Result<()> {
     let path = history_path()?;
     if !path.exists() {
@@ -146,16 +147,26 @@ pub fn trim_history(limit: usize) -> Result<()> {
 mod tests {
     use super::*;
     use std::env;
+    use std::sync::Mutex;
+
+    // Environment-based data_dir is global, so serialize filesystem-history
+    // tests to prevent XDG_DATA_HOME collisions.
+    static HISTORY_TEST_LOCK: Mutex<()> = Mutex::new(());
 
     fn with_temp_history<F>(f: F)
     where
         F: FnOnce(),
     {
-        let tmp = env::temp_dir().join(format!("vicount-history-test-{}", std::process::id()));
+        let _lock = HISTORY_TEST_LOCK.lock().unwrap();
+        let tmp = env::temp_dir().join(format!(
+            "vicount-history-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
         fs::create_dir_all(&tmp).unwrap();
-        // Override data_dir via environment if supported, otherwise rely on the
-        // test-only helper below.
-        let _guard = env::var("XDG_DATA_HOME").ok();
         env::set_var("XDG_DATA_HOME", &tmp);
         f();
         let _ = fs::remove_dir_all(&tmp);
