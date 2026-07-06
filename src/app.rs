@@ -82,6 +82,7 @@ pub struct App {
 /// The canonical slash command menu used by Vicount.
 pub const SLASH_COMMANDS: &[SlashCommand] = &[
     SlashCommand { name: "new", description: "Start a new session", args_hint: "[name]" },
+    SlashCommand { name: "sessions", description: "Browse and resume sessions", args_hint: "" },
     SlashCommand { name: "model", description: "Switch model for this session", args_hint: "" },
     SlashCommand { name: "skills", description: "Focus/toggle skills checklist", args_hint: "" },
     SlashCommand { name: "tools", description: "Focus/toggle tools checklist", args_hint: "" },
