@@ -8,6 +8,7 @@ use tokio::sync::{Mutex, mpsc};
 use tokio_tungstenite::tungstenite::Message as WsMessage;
 use tracing::{debug, warn};
 use url::Url;
+use crate::types::{Message, Role};
 use vico_desktop_client::{
     DesktopClient, VicoConfig,
     types::{AtomisePlanRequest, ChatRequest, ContextMessage, OrchestrateSubmitRequest, OrchestrateTask},
@@ -254,6 +255,135 @@ impl VicoClient {
         debug!("system health response: {res}");
         Ok(serde_json::to_string(&res).unwrap_or_else(|_| "healthy".to_string()))
     }
+
+    /// List server-side chat sessions.
+    pub async fn list_sessions(&self, limit: Option<usize>) -> Result<Vec<SessionSummary>> {
+        if !self.enabled {
+            return Ok(Vec::new());
+        }
+        self.ensure_auth().await?;
+        let lock = self.inner.lock().await;
+        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let res: Value = client.list_sessions(limit).await.map_err(|e| anyhow!("{e}"))?;
+        debug!("list sessions response: {res}");
+        parse_session_list(res)
+    }
+
+    /// Create a new server-side session and activate it.
+    pub async fn create_session(&mut self, name: &str) -> Result<String> {
+        let id = format!("vicount-{}", uuid::Uuid::new_v4());
+        if self.enabled {
+            self.ensure_auth().await?;
+            let lock = self.inner.lock().await;
+            let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+            client
+                .create_session(&id, name, None)
+                .await
+                .map_err(|e| anyhow!("{e}"))?;
+        }
+        self.session_id = Some(id.clone());
+        Ok(id)
+    }
+
+    /// Rename the active or a specific session.
+    pub async fn rename_session(&self, session_id: &str, name: &str) -> Result<()> {
+        if !self.enabled {
+            return Ok(());
+        }
+        self.ensure_auth().await?;
+        let lock = self.inner.lock().await;
+        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        client
+            .rename_session(session_id, name)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
+        Ok(())
+    }
+
+    /// Delete a session on the server.
+    pub async fn delete_session(&self, session_id: &str) -> Result<()> {
+        if !self.enabled {
+            return Ok(());
+        }
+        self.ensure_auth().await?;
+        let lock = self.inner.lock().await;
+        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        client
+            .delete_session(session_id)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
+        Ok(())
+    }
+
+    /// Load the message history for a session and return it as Vicount messages.
+    pub async fn load_session_history(&self, session_id: &str) -> Result<Vec<Message>> {
+        if !self.enabled {
+            return Ok(Vec::new());
+        }
+        self.ensure_auth().await?;
+        let lock = self.inner.lock().await;
+        let client = lock.as_ref().ok_or_else(|| anyhow!("client not available"))?;
+        let res: Value = client
+            .session_history(session_id)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
+        debug!("session history response: {res}");
+        parse_session_history(res)
+    }
+}
+
+/// Minimal summary of a chat session returned by the server.
+#[derive(Debug, Clone)]
+pub struct SessionSummary {
+    pub session_id: String,
+    pub name: String,
+    pub message_count: usize,
+}
+
+fn parse_session_list(value: Value) -> Result<Vec<SessionSummary>> {
+    let data = value.get("data").cloned().unwrap_or(Value::Array(vec![]));
+    let array = data.as_array().ok_or_else(|| anyhow!("sessions data is not an array"))?;
+    let mut sessions = Vec::new();
+    for item in array {
+        let session_id = item
+            .get("session_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let name = item
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or(&session_id)
+            .to_string();
+        let message_count = item.get("message_count").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+        sessions.push(SessionSummary {
+            session_id,
+            name,
+            message_count,
+        });
+    }
+    Ok(sessions)
+}
+
+fn parse_session_history(value: Value) -> Result<Vec<Message>> {
+    let data = value.get("data").cloned().unwrap_or(Value::Array(vec![]));
+    let array = data.as_array().ok_or_else(|| anyhow!("session history is not an array"))?;
+    let mut messages = Vec::new();
+    for item in array {
+        let role_str = item.get("role").and_then(|v| v.as_str()).unwrap_or("user");
+        let role = match role_str {
+            "assistant" => Role::Assistant,
+            "system" => Role::System,
+            _ => Role::User,
+        };
+        let content = item
+            .get("content")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        messages.push(Message { role, content, streaming: false });
+    }
+    Ok(messages)
 }
 
 /// Convert an HTTP URL into a WebSocket URL and append the auth token.
